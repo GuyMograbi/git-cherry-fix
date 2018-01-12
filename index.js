@@ -141,7 +141,7 @@ function buildTasks (answers) {
   if (answers.openWebsite) {
     tasks.push({
       title: `open website ${answers.openWebsiteUrl}`,
-      task: () => opn(answers.openWebsiteUrl)
+      task: () => opn(answers.openWebsiteUrl, {wait: false})
     });
   }
 
