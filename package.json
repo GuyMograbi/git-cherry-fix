@@ -4,10 +4,12 @@
   "dependencies": {
     "chalk": "^2.3.0",
     "eslint": "^4.15.0",
+    "git-url-parse": "^7.0.2",
     "inquirer": "^5.0.0",
     "inquirer-autocomplete-prompt": "^0.12.1",
     "listr": "^0.13.0",
     "minimist": "^1.2.0",
+    "opn": "^5.1.0",
     "pad": "^2.0.3",
     "semistandard": "^12.0.0",
     "shelljs": "^0.7.8"
