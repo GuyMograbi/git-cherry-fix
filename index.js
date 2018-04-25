@@ -174,12 +174,12 @@ inquirer.prompt([
     when: ({useExistingBranch}) => !useExistingBranch,
     message: `decide on name to new branch: `,
     default: ({branchBase}) => {
-      let newName = branchBase.toUpperCase() + '-' + currentBranch;
+      let newName = 'patch/' + branchBase.toUpperCase() + '-' + currentBranch;
       let counter = 1;
 
       while (allLocalBranches.includes(newName)) {
         counter++;
-        newName = `${branchBase.toUpperCase()}-${counter}-${currentBranch}`;
+        newName = `patch/${branchBase.toUpperCase()}-${counter}-${currentBranch}`;
       }
       return newName;
     }
