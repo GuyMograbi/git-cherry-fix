@@ -224,7 +224,7 @@ inquirer.prompt([
         }
         answers.openWebsiteUrl = `https://${parsedUrl.resource}/${parsedUrl.pathname}${pullRequestsSuffix}`;
       }
-      return answers.openWebsiteUrl;
+      return return `Should I open [${answers.openWebsiteUrl}] when I'm done?`;
     },
     default: true
   }
