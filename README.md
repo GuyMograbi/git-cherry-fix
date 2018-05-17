@@ -18,3 +18,4 @@ roadmap:
 
  [ ] - push changes
  [ ] - open a PR (support bitbucket) - when applicable using base branch
+ [ ] - show only commits that do not exist in target branch
