@@ -2,6 +2,7 @@
 var shell = require('shelljs');
 const chalk = require('chalk');
 const Listr = require('listr');
+var argv = require('minimist')(process.argv.slice(2));
 var inquirer = require('inquirer');
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 var pad = require('pad');
@@ -32,7 +33,7 @@ allLocalBranches = allLocalBranches.map((b) => {
   }
 });
 
-const allRemotes = shell.exec(`git remote`).toString().split('\n');
+const allRemotes = Object.keys(shell.exec(`git remote`).toString().split('\n').filter(v => v.trim().length > 0).reduce((result, key) => {result[key.trim()] = key.trim(); return result}, {}));
 
 const f = (value, length) => pad(value.slice(0, length), length);
 
@@ -159,14 +160,28 @@ inquirer.prompt([
   {
     type: 'confirm',
     name: 'useExistingBranch',
+    when: (answers) => {
+      if (argv._[0] && allBranches.indexOf(argv._[0]) >= 0){
+        answers.useExistingBranch = false;
+        return false;
+      }
+      return true;
+    },
     message: 'Merge to existing branch?',
     default: false
   },
   {
     type: 'autocomplete',
     name: 'branchBase',
+    when: (answers) => {
+      if (argv._[0] && allBranches.indexOf(argv._[0]) >= 0) {
+        answers.branchBase = argv._[0];
+        return false;
+      }
+      return true;
+    },
     message: ({useExistingBranch}) => useExistingBranch ? 'please pick branch: ' : 'please pick base for new branch: ',
-    source: (answers, input) => Promise.resolve(allBranches.filter((b) => b.includes(input)))
+    source: (answers, input) => Promise.resolve(allBranches.filter((b) => b.includes(input)).sort((a,b)=>a.length >= b.length))
   },
   {
     type: 'input',
@@ -174,12 +189,17 @@ inquirer.prompt([
     when: ({useExistingBranch}) => !useExistingBranch,
     message: `decide on name to new branch: `,
     default: ({branchBase}) => {
-      let newName = 'patch/' + branchBase.toUpperCase() + '-' + currentBranch;
+      let nameBase = currentBranch;
+      if (nameBase.startsWith('patch/')) {
+        [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
+      }
+      nameBase = nameBase || currentBranch;// just in case we didn't make it..
+      let newName = 'patch/' + branchBase.toUpperCase() + '-' + nameBase;
       let counter = 1;
 
       while (allLocalBranches.includes(newName)) {
         counter++;
-        newName = `patch/${branchBase.toUpperCase()}-${counter}-${currentBranch}`;
+        newName = `patch/${branchBase.toUpperCase()}-${counter}-${nameBase}`;
       }
       return newName;
     }
@@ -193,40 +213,20 @@ inquirer.prompt([
   {
     type: 'autocomplete',
     name: 'remoteRepo',
-    when: ({isPushCommit}) => isPushCommit,
-    message: 'select remote to push',
-    default: 'origin',
-    source: (answers, input) => Promise.resolve(allRemotes.filter((r) => r.includes(input)))
-  },
-  {
-    type: 'confirm',
-    name: 'openWebsite',
-    when: ({isPushCommit}) => isPushCommit,
-    message: (answers) => {
-      const linePrefix = `Push  URL:`;
-      const remoteUrl = shell.exec(`git remote show ${answers.remoteRepo} | grep "${linePrefix}"`, {silent: true}).toString().slice(linePrefix.length).trim();
-      const parsedUrl = gitUrlParse(remoteUrl);
-      let pullRequestsSuffix = '';
-
-      if (parsedUrl.resource) {
-        if (parsedUrl.resource.includes('github')) {
-          pullRequestsSuffix = '/pulls';
-        } else if (parsedUrl.resource.includes('bitbucket')) {
-          pullRequestsSuffix = '/pull-requests/';
-        }
+    when: (answers) => {
+      if (!answers.isPushCommit) {
+        return false;
       }
-
-      if (parsedUrl.protocol === 'http' || parsedUrl.protocol === 'https') {
-        answers.openWebsiteUrl = parsedUrl.href;
-      } else {
-        if (parsedUrl.pathname && parsedUrl.pathname.endsWith('.git')) {
-          parsedUrl.pathname = parsedUrl.pathname.slice(0, -4);
-        }
-        answers.openWebsiteUrl = `https://${parsedUrl.resource}/${parsedUrl.pathname}${pullRequestsSuffix}`;
+      if (allRemotes.length === 1){
+        answers.remoteRepo = allRemotes[0];
+        return false;
       }
-      return return `Should I open [${answers.openWebsiteUrl}] when I'm done?`;
+      return true;
+
     },
-    default: true
+    message: 'select remote to push',
+    default: () => allRemotes.length > 1 ? 'origin' : allRemotes[0],
+    source: (answers, input) => Promise.resolve(allRemotes.filter((r) => r.includes(input)))
   }
   // {
   //   type: 'confirm',
