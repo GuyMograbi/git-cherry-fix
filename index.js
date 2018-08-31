@@ -60,13 +60,19 @@ function wrap (f) {
 function buildTasks (answers) {
   const tasks = [];
 
+  const checkoutBranch = () => answers.useExistingBranch ? (answers.branchName || answers.branchBase) : answers.branchBase;
+  const targetBranch = () => answers.useExistingBranch && !answers.branchName ? answers.branchBase : answers.branchName;
+
+  // console.log('checkoutBranch', checkoutBranch());
+  // console.log('targetBranch', targetBranch());
+  // process.exit(0);
   tasks.push({
-    title: `checkout branch ${answers.branchBase}`,
+    title: `checkout branch ${checkoutBranch()}`,
     task: wrap(function (cb) {
-      shell.exec(`git checkout ${answers.branchBase}`, {silent: true}, (code, stdout, stderr) => {
+      shell.exec(`git checkout ${checkoutBranch()}`, {silent: true}, (code, stdout, stderr) => {
         const updateEnv = {code, stdout, stderr};
         if (updateEnv.code !== 0) {
-          console.error(`checking out branch ${answers.branchBase} failed with code ${updateEnv.code}. \n ${updateEnv.toString()} \n ${updateEnv.stderr}`);
+          console.error(`checking out branch ${checkoutBranch()} failed with code ${updateEnv.code}. \n ${updateEnv.toString()} \n ${updateEnv.stderr}`);
           throw new Error('failed');
         }
         cb();
@@ -75,12 +81,12 @@ function buildTasks (answers) {
   });
 
   tasks.push({
-    title: `pull on branch ${answers.branchBase}`,
+    title: `pull on branch ${checkoutBranch()}`,
     task: wrap(function (cb) {
       shell.exec(`git pull`, {silent: true}, (code, stdout, stderr) => {
         const updateEnv = {code, stdout, stderr};
         if (updateEnv.code !== 0) {
-          console.error(`pulling branch ${answers.branchBase} failed with code ${updateEnv.code}. \n ${updateEnv.toString()} \n ${updateEnv.stderr}`);
+          console.error(`pulling branch ${checkoutBranch()} failed with code ${updateEnv.code}. \n ${updateEnv.toString()} \n ${updateEnv.stderr}`);
           throw new Error('failed');
         }
         cb();
@@ -102,9 +108,9 @@ function buildTasks (answers) {
         });
       })
     });
-  } else {
-    answers.branchName = answers.branchBase; // normalize for future reference.
   }
+
+  answers.branchName = targetBranch(); // normalize for future reference. branchName might be empty if using existing branch
 
   answers.commits.reverse().forEach((c) => {
     tasks.push({
@@ -149,6 +155,20 @@ function buildTasks (answers) {
   return tasks;
 }
 
+const getNameBase = (branchName) => {
+  let nameBase = branchName;
+  if (nameBase.startsWith('patch/')) {
+    [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
+  }
+  return nameBase || branchName;// just in case we didn't make it..
+}
+
+const targetBranchName = (currentBranch, baseBranch, counter = 0) => {
+  const prefix =  (baseBranch === 'develop' ? '' : 'patch/' + baseBranch.toUpperCase() + '-');
+  const version = counter > 0 ? prefix + `${counter}-` : prefix;
+  return version + getNameBase(currentBranch);
+}
+
 inquirer.prompt([
   {
     type: 'checkbox',
@@ -162,7 +182,7 @@ inquirer.prompt([
     name: 'useExistingBranch',
     when: (answers) => {
       if (argv._[0] && allBranches.indexOf(argv._[0]) >= 0){
-        answers.useExistingBranch = false;
+        answers.useExistingBranch = (allLocalBranches.includes(targetBranchName(currentBranch, argv._[0], 0)));
         return false;
       }
       return true;
@@ -186,28 +206,33 @@ inquirer.prompt([
   {
     type: 'input',
     name: 'branchName',
-    when: ({useExistingBranch}) => !useExistingBranch,
+    when: (answers) => {
+      const {useExistingBranch, branchBase} = answers;
+      if (argv._[0]) {
+        answers.branchName = targetBranchName(currentBranch, branchBase);
+        return false;
+      } else {
+        return !useExistingBranch;
+      }
+    },
     message: `decide on name to new branch: `,
     default: ({branchBase}) => {
-      let nameBase = currentBranch;
-      if (nameBase.startsWith('patch/')) {
-        [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
-      }
-      nameBase = nameBase || currentBranch;// just in case we didn't make it..
-      let newName = 'patch/' + branchBase.toUpperCase() + '-' + nameBase;
-      let counter = 1;
-
-      while (allLocalBranches.includes(newName)) {
+      // for develop, we actually want to strip down the patch/ prefix..
+      let counter = 0;
+      let newName = () => targetBranchName(currentBranch, branchBase, counter);
+      while (allLocalBranches.includes(newName())) {
         counter++;
-        newName = `patch/${branchBase.toUpperCase()}-${counter}-${nameBase}`;
       }
-      return newName;
+      return newName();
     }
   },
   {
     type: 'confirm',
     name: 'isPushCommit',
     message: 'push commits to remote?',
+    when: (answers) => {
+      return !answers.useExistingBranch;
+    },
     default: true
   },
   {
@@ -239,6 +264,7 @@ inquirer.prompt([
   // },
 
 ]).then(answers => {
+  // console.log(answers);
   console.log(`\n\nThank you.. starting to work...\n\n`);
   const tasks = new Listr(buildTasks(answers));
   return tasks.run();
