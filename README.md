@@ -22,6 +22,14 @@ quick interactive process
 git-cherry-fix <base-branch>
 ```
 
+# Assumptions
+
+In order for the `quick-pr` tool to work best, you should name your branches with a prefix and a forward slash.
+
+So for example `task/this-is-my-branch`.
+
+quick-pr uses this to know where your branch name starts, and uses the same convention by prefixing patch branches with `patch/TARGET-task/this-is-my-branch`. Where target is the target branch. 
+
 # Examples
 
 I just wrote a hotfix to master. Now I want to port it to staging and develop.

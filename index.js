@@ -158,7 +158,9 @@ function buildTasks (answers) {
 const getNameBase = (branchName) => {
   let nameBase = branchName;
   if (nameBase.startsWith('patch/')) {
-    [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
+    try{
+      [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
+    } catch(e) {}
   }
   return nameBase || branchName;// just in case we didn't make it..
 }
