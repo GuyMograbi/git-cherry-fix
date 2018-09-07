@@ -10,12 +10,32 @@ npm install -g git-cherry-fix
 
 # Usage
 
+start interactive process
+
 ```
 git-cherry-fix
 ```
 
+quick interactive process
+
+```
+git-cherry-fix <base-branch>
+```
+
+# Examples
+
+I just wrote a hotfix to master. Now I want to port it to staging and develop.
+
+ - I use branch name `patch/MASTER-task/fix-something`
+ - I run the command `git-cherry-fix staging`
+   - This will automatically create branch `patch/STAGING-task/fix-something` based off staging
+ - I run the command `git-cherry-fix develop`
+   - This will automatically create branch `task/fix-something` based off develop
+
+
+
 roadmap:
 
- [ ] - push changes
- [ ] - open a PR (support bitbucket) - when applicable using base branch
- [ ] - show only commits that do not exist in target branch
+ - [X] push changes
+ - [X] ~~open a PR (support bitbucket) - when applicable using base branch~~ - Use [quick-pr](http://github.com/GuyMograbi/quick-pr) instead
+ - [ ] show only commits that do not exist in target branch
