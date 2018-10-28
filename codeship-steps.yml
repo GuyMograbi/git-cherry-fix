@@ -1,0 +1,8 @@
+- type: serial
+  name: build
+  service: app
+  steps:
+    - command: bash -c "echo hello world"
+    - command: bash -c "ls -ll"
+    - command: bash -c "npm install"
+    - command: bash -c "npm test"

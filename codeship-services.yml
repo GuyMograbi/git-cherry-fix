@@ -1,0 +1,4 @@
+app:
+  build: .
+nodejs:
+  image: node:8.9.1

@@ -1,6 +1,9 @@
 {
   "name": "git-cherry-fix",
   "version": "0.0.8",
+  "scripts": {
+    "test": "semistandard"
+  },
   "dependencies": {
     "chalk": "^2.3.0",
     "eslint": "^4.15.0",
