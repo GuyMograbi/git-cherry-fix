@@ -8,6 +8,22 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
 var pad = require('pad');
 const opn = require('opn');
 const gitUrlParse = require('git-url-parse');
+const findUp = require('find-up');
+const yamlConfPath = findUp.sync('.git-cherry-fix.yml');
+let yamlConf = {};
+if (yamlConfPath) {
+  console.log('using yaml configuration found at', yamlConfPath);
+  const YAML = require('yamljs');
+  yamlConf = YAML.load(yamlConfPath);
+  if (argv.verbose) {
+    console.log('yamlConf is', yamlConf);
+  }
+} else {
+  if (argv.verbose) {
+    console.log('could not find yaml configuration file. using args and defaults');
+  }
+}
+
 
 if (!shell.exec(`git status`, {silent: true}).toString().includes('nothing to commit')) {
   console.error('working directory not clean. please commit changes');
@@ -165,8 +181,19 @@ const getNameBase = (branchName) => {
   return nameBase || branchName;// just in case we didn't make it..
 }
 
+const getMainBranch = () => {
+  return yamlConf.main_branch || 'develop'; // default to git flow standard
+}
+
+const branchToNickname = (branch) => {
+  if (yamlConf.branch_nickname && yamlConf.branch_nickname.hasOwnProperty(branch)) {
+    return yamlConf.branch_nickname[branch];
+  }
+  return branch;
+}
+
 const targetBranchName = (currentBranch, baseBranch, counter = 0) => {
-  const prefix =  (baseBranch === 'develop' ? '' : 'patch/' + baseBranch.toUpperCase() + '-');
+  const prefix =  (baseBranch === getMainBranch() ? '' : 'patch/' + branchToNickname(baseBranch).toUpperCase() + '-');
   const version = counter > 0 ? prefix + `${counter}-` : prefix;
   return version + getNameBase(currentBranch);
 }
