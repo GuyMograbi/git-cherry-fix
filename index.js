@@ -3,6 +3,25 @@ var shell = require('shelljs');
 const chalk = require('chalk');
 const Listr = require('listr');
 var argv = require('minimist')(process.argv.slice(2));
+
+if (argv.version) {
+  console.log(require('./package.json').version);
+  process.exit(0);
+}
+
+if (argv.help) {
+  console.log(`
+  start cherry-picking with nice menu
+    git-cherry-fix
+
+  start cherry-picking based on a known branch
+    git-cherry-fix <branch>
+
+    for example: git-cherry-fix master
+`);
+  process.exit(0);
+}
+
 var inquirer = require('inquirer');
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 var pad = require('pad');
