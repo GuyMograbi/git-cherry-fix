@@ -26,7 +26,7 @@ var inquirer = require('inquirer');
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 var pad = require('pad');
 const opn = require('opn');
-const gitUrlParse = require('git-url-parse');
+// const gitUrlParse = require('git-url-parse');
 const findUp = require('find-up');
 const yamlConfPath = findUp.sync('.git-cherry-fix.yml');
 let yamlConf = {};
@@ -42,7 +42,6 @@ if (yamlConfPath) {
     console.log('could not find yaml configuration file. using args and defaults');
   }
 }
-
 
 if (!shell.exec(`git status`, {silent: true}).toString().includes('nothing to commit')) {
   console.error('working directory not clean. please commit changes');
@@ -68,7 +67,7 @@ allLocalBranches = allLocalBranches.map((b) => {
   }
 });
 
-const allRemotes = Object.keys(shell.exec(`git remote`).toString().split('\n').filter(v => v.trim().length > 0).reduce((result, key) => {result[key.trim()] = key.trim(); return result}, {}));
+const allRemotes = Object.keys(shell.exec(`git remote`).toString().split('\n').filter(v => v.trim().length > 0).reduce((result, key) => { result[key.trim()] = key.trim(); return result; }, {}));
 
 const f = (value, length) => pad(value.slice(0, length), length);
 
@@ -193,29 +192,29 @@ function buildTasks (answers) {
 const getNameBase = (branchName) => {
   let nameBase = branchName;
   if (nameBase.startsWith('patch/')) {
-    try{
-      [,,nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
-    } catch(e) {}
+    try {
+      [,, nameBase] = nameBase.match(/^(patch\/.*)-(.*\/.*)/);
+    } catch (e) {}
   }
   return nameBase || branchName;// just in case we didn't make it..
-}
+};
 
 const getMainBranch = () => {
   return yamlConf.main_branch || 'develop'; // default to git flow standard
-}
+};
 
 const branchToNickname = (branch) => {
   if (yamlConf.branch_nickname && yamlConf.branch_nickname.hasOwnProperty(branch)) {
     return yamlConf.branch_nickname[branch];
   }
   return branch;
-}
+};
 
 const targetBranchName = (currentBranch, baseBranch, counter = 0) => {
-  const prefix =  (baseBranch === getMainBranch() ? '' : 'patch/' + branchToNickname(baseBranch).toUpperCase() + '-');
+  const prefix = (baseBranch === getMainBranch() ? '' : 'patch/' + branchToNickname(baseBranch).toUpperCase() + '-');
   const version = counter > 0 ? prefix + `${counter}-` : prefix;
   return version + getNameBase(currentBranch);
-}
+};
 
 inquirer.prompt([
   {
@@ -229,7 +228,7 @@ inquirer.prompt([
     type: 'confirm',
     name: 'useExistingBranch',
     when: (answers) => {
-      if (argv._[0] && allBranches.indexOf(argv._[0]) >= 0){
+      if (argv._[0] && allBranches.indexOf(argv._[0]) >= 0) {
         answers.useExistingBranch = (allLocalBranches.includes(targetBranchName(currentBranch, argv._[0], 0)));
         return false;
       }
@@ -249,7 +248,7 @@ inquirer.prompt([
       return true;
     },
     message: ({useExistingBranch}) => useExistingBranch ? 'please pick branch: ' : 'please pick base for new branch: ',
-    source: (answers, input) => Promise.resolve(allBranches.filter((b) => b.includes(input)).sort((a,b)=>a.length >= b.length))
+    source: (answers, input) => Promise.resolve(allBranches.filter((b) => b.includes(input)).sort((a, b) => a.length >= b.length))
   },
   {
     type: 'input',
@@ -290,12 +289,11 @@ inquirer.prompt([
       if (!answers.isPushCommit) {
         return false;
       }
-      if (allRemotes.length === 1){
+      if (allRemotes.length === 1) {
         answers.remoteRepo = allRemotes[0];
         return false;
       }
       return true;
-
     },
     message: 'select remote to push',
     default: () => allRemotes.length > 1 ? 'origin' : allRemotes[0],
