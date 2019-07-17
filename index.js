@@ -48,7 +48,7 @@ if (!shell.exec(`git status`, {silent: true}).toString().includes('nothing to co
   process.exit(1);
 }
 
-const log = shell.exec('git log -n 20 --pretty=format:"hash => %h date => %cr name => %cn message => %s"', {silent: true});
+const log = shell.exec('git log -n 20 --no-merges --first-parent --pretty=format:"hash => %h date => %cr name => %cn message => %s"', {silent: true});
 
 if (log.code !== 0) {
   console.error(`git returned code ${0} with output \n\n stdout ==> ${log.toString()} \n\n stderr ==> ${log.stderr}`);
